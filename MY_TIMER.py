@@ -20,8 +20,8 @@ class MyGUI():
         self.COLOR_PAUSE="#808080"
         self.COLOR_WORK="#3B77BC"
         self.MINUT = 60
-        self.FILE1 = "Work.mp3" #дефолтные пути
-        self.FILE2 = "Rest.mp3"
+        self.PATH_TO_WORK = "Work.mp3" #дефолтные пути
+        self.PATH_TO_REST = "Rest.mp3"
         
         #Оформить окошко
         self.main_window=tk.Tk()
@@ -134,23 +134,27 @@ class MyGUI():
         self.__frame_butt.pack()
     
     def __start(self):
-        '''entry in execution flow'''
-        self.main_window.update_idletasks()
-        print(self.main_window.winfo_width()) 
-        print(self.main_window.winfo_height()) 
+        '''entry in execution flow, logic of flow'''
+        #self.main_window.update_idletasks()
+        #print(self.main_window.winfo_width()) 
+        #print(self.main_window.winfo_height()) 
         #self.__process_status отслеживание в каком статусе поток 1= rest, 2= work, 3=pause from rest, 4= pause from work (+4=start)
         if self.__process_status==3:
             self.__process_status=1
+            self.play_audio(self.PATH_TO_REST)
             self.schedule_tick()
         elif self.__process_status==4:
             self.__process_status=2
+            self.play_audio(self.PATH_TO_WORK)
             self.schedule_tick()
         else:
             if self.__process_status==1: 
                 self.__seconds_till_next_phase=int(self.DEF_MIN_REST*self.MINUT)
+                self.play_audio(self.PATH_TO_REST)
                 self.schedule_tick()
             elif self.__process_status==2:
                 self.__seconds_till_next_phase=int(self.DEF_MIN_WORK*self.MINUT)
+                self.play_audio(self.PATH_TO_WORK)
                 self.schedule_tick()
                 
         if self.__cycle>=self.DEF_AMOUNT_CYCLES:
@@ -231,7 +235,7 @@ class MyGUI():
         self.update_status()
         
     # Функция для воспроизведения файла системным плеером
-    def play_audio(file_path):
+    def play_audio(self,file_path):
         platform= sys.platform
         if platform == "win32":
             os.system(f'start "" "{file_path}"')
