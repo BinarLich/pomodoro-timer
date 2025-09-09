@@ -57,10 +57,15 @@ class MyGUI():
     def __init__(self):
         self.WIDTH=200
         self.HEIGHT=50
+        self.DEF_MIN_WORK=25
+        self.DEF_MIN_REST=5
+        self.DEF_MIN_BIG_REST=30
+        self.DEF_AMOUNT_CYCLES=4
         self.PADXY=5 # в пикселях
+        self.PADXY_s=2 
         self.ENTRY_WIDTH = 5 #в символах
-        self.FONT_STATUS=("Times","32","bold")
-        self.FONT_MINS=("Times","16")
+        self.FONT_STATUS=("Times","24","bold")
+        self.FONT_MINS=("Times","32","bold")
         self.COLOR_GREEN="#00ff00"
         self.COLOR_GREY="#808080"
         self.COLOR_BLUE="#3B77BC"
@@ -70,10 +75,6 @@ class MyGUI():
         self.main_window=tk.Tk()
         
         self.__init_info()
-        #self.frame_process=tk.Frame(self.main_window)
-        #self.string=tk.StringVar()
-        #self.label=tk.Label(self.label_frame,textvariable=self.string,width=30,height=5)
-        #self.label.pack()
                         
         #Поля с настройками и всё к ним
         self.__init_settings()
@@ -95,13 +96,22 @@ class MyGUI():
         self.frame_info_status.pack(padx=self.PADXY,pady=self.PADXY)
         
         self.__output_status=tk.StringVar()
-        self.__output_status_label=tk.Label(self.frame_info_status,textvariable=self.__output_status,font=self.FONT_STATUS,bg=self.COLOR_GREY)
-        self.__output_status_label.pack()
+        self.__output_status_label=tk.Label(self.frame_info_status,textvariable=self.__output_status,font=self.FONT_STATUS)
+        self.__output_status_label.pack(side="top")
         
-        #для минут
+        #для минут 
         self.frame_info_minutes=tk.Frame(self.main_window)
         self.frame_info_minutes.pack(padx=self.PADXY,pady=self.PADXY)
         
+        self.label_mins_1 =tk.Label(self.frame_info_minutes,text="Until the end of current phase is:")
+        #self.label_mins_2 =tk.Label(self.frame_info_minutes,text="minutes")
+              
+        self.__label_mins_output=tk.StringVar()
+        self.__label_mins_output_label=tk.Label(self.frame_info_minutes,textvariable=self.__label_mins_output,font=self.FONT_MINS)
+        
+        self.label_mins_1.pack(side="top")
+        self.__label_mins_output_label.pack(side="top")
+        #self.label_mins_2.pack(side="top")
         
         
     #виджеты для настроек таймера
@@ -110,38 +120,45 @@ class MyGUI():
         #3) какой цикл из скольки (сделать задаваемым) и сколько минут отдых после них
         #для 2-3, 3 рамки общую композицию, по одной для виджетов и лейблов, сверху поясняющие
         self.frame_set_n_info=tk.Frame(self.main_window)
-        self.frame_settings=tk.Frame(self.main_window)
-        self.frame_settings_labels=tk.Frame(self.main_window)
-        self.frame_settings_labels.pack(padx=self.PADXY)
-        self.frame_settings.pack(padx=self.PADXY,pady=self.PADXY)
         self.frame_set_n_info.pack(padx=self.PADXY,pady=self.PADXY)
+        self.frame_settings_labels=[]
+
+        self.label_settings_description=tk.Label(self.frame_set_n_info,text="You can specify amount of minutes for phases:")
+        self.label_settings_description.pack(side="top",padx=self.PADXY)
         
-        self.label_settings_description=tk.Label(self.frame_set_n_info,text="You can specify amount of minutes for phases.")
-        self.label_settings_mins_work=tk.Label(self.frame_settings_labels,text="Focus:")
-        self.label_settings_mins_chill=tk.Label(self.frame_settings_labels,text="Small chill:")
-        self.label_settings_mins_big_chill=tk.Label(self.frame_settings_labels,text="Big chill:")
-        self.label_settings_mins_cycle_count=tk.Label(self.frame_settings_labels,text="Cycles:")
+        for i in range(4):
+            self.frame_settings_labels.append(tk.Frame(self.frame_set_n_info))
+            self.frame_settings_labels[i].pack(side="left",padx=self.PADXY,pady=self.PADXY)
+
+        self.label_settings_mins_work=tk.Label(self.frame_settings_labels[0],text="Focus:")
+        self.label_settings_mins_chill=tk.Label(self.frame_settings_labels[1],text="Small chill:")
+        self.label_settings_mins_big_chill=tk.Label(self.frame_settings_labels[2],text="Big chill:")
+        self.label_settings_mins_cycle_count=tk.Label(self.frame_settings_labels[3],text="Cycles:")
         
-        self.label_settings_description.pack(padx=self.PADXY)
         self.label_settings_mins_work.pack(padx=self.PADXY)
         self.label_settings_mins_chill.pack(padx=self.PADXY)
         self.label_settings_mins_big_chill.pack(padx=self.PADXY)
         self.label_settings_mins_cycle_count.pack(padx=self.PADXY)
                 
-        self.__entry_settings_mins_work=tk.Entry(self.frame_settings,width=self.ENTRY_WIDTH)
-        self.__entry_settings_mins_work.insert(tk.END,25)
-        self.__entry_settings_mins_chill=tk.Entry(self.frame_settings,width=self.ENTRY_WIDTH)
-        self.__entry_settings_mins_chill.insert(tk.END,5)
-        self.__entry_settings_mins_cycle_amount=tk.Entry(self.frame_settings,width=self.ENTRY_WIDTH)
-        self.__entry_settings_mins_cycle_amount.insert(tk.END,4)
-        self.__entry_settings_mins_big_chill=tk.Entry(self.frame_settings,width=self.ENTRY_WIDTH)
-        self.__entry_settings_mins_big_chill.insert(tk.END,30)
+        self.__entry_settings_mins_work=tk.Entry(self.frame_settings_labels[0],width=self.ENTRY_WIDTH,justify=tk.RIGHT)
+        self.__entry_settings_mins_work.insert(0,self.DEF_MIN_WORK)
+        self.__entry_settings_mins_chill=tk.Entry(self.frame_settings_labels[1],width=self.ENTRY_WIDTH,justify=tk.RIGHT)
+        self.__entry_settings_mins_chill.insert(0,self.DEF_MIN_REST)
+        self.__entry_settings_mins_cycle_amount=tk.Entry(self.frame_settings_labels[2],width=self.ENTRY_WIDTH,justify=tk.RIGHT)
+        self.__entry_settings_mins_cycle_amount.insert(0,self.DEF_AMOUNT_CYCLES)
+        self.__entry_settings_mins_big_chill=tk.Entry(self.frame_settings_labels[3],width=self.ENTRY_WIDTH,justify=tk.RIGHT)
+        self.__entry_settings_mins_big_chill.insert(0,self.DEF_MIN_BIG_REST)
         
-        self.__entry_settings_mins_work.pack(padx=self.PADXY)
-        self.__entry_settings_mins_chill.pack(padx=self.PADXY)
-        self.__entry_settings_mins_cycle_amount.pack(padx=self.PADXY)
-        self.__entry_settings_mins_big_chill.pack(padx=self.PADXY)
+        self.__entry_settings_mins_work.pack(padx=(self.PADXY))
+        self.__entry_settings_mins_chill.pack(padx=(self.PADXY))
+        self.__entry_settings_mins_cycle_amount.pack(padx=(self.PADXY))
+        self.__entry_settings_mins_big_chill.pack(padx=(self.PADXY))
+
+        #self.frame_settings_labels.pack(padx=self.PADXY)
+        #self.frame_settings.pack(padx=self.PADXY,pady=self.PADXY_s)
+        # в следующий раз я выберу писать это в цикле, а не "понятные" названия переменных. гавно
         
+
     
     #Инит кнопок
     def __init_butt(self):
@@ -168,7 +185,9 @@ class MyGUI():
         pass
     def __pause(self):
         pass
+    def __change_colors(self):
+        pass
         
 if __name__=="__main__":
-    main_loop()
-    #mygui=MyGUI()
+    #main_loop()
+    mygui=MyGUI()
