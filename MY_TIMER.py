@@ -3,18 +3,10 @@ import sys
 import tkinter as tk
 from tkinter import messagebox as mb
 
-# Функция для очистки консоли
-def clear_screen():
-    platform= sys.platform
-    if platform == "win32":
-        os.system("cls")
-    else:
-        os.system("clear")
-
 class MyGUI():
     def __init__(self):
-        self.WIDTH=289
-        self.HEIGHT=255
+        self.WIDTH=336 #289 
+        self.HEIGHT=255 #255
         self.DEF_MIN_WORK=25
         self.DEF_MIN_REST=5
         self.DEF_MIN_BIG_REST=30
@@ -31,8 +23,11 @@ class MyGUI():
         self.FILE1 = "Work.mp3" #дефолтные пути
         self.FILE2 = "Rest.mp3"
         
-        #Оформить окошко в духе Win XP 
+        #Оформить окошко
         self.main_window=tk.Tk()
+        self.main_window.title("Timer by @BinarLich")
+        self.main_window.iconphoto(True, tk.PhotoImage(file="icon.png"))
+        #self.main_window.geometry(f"{self.WIDTH}x{self.HEIGHT}")
         
         #инициализация логики
         self.__process_status=4 #отслеживание в каком статусе поток 1= rest, 2= work, 3=pause from rest, 4= pause from work (+ 4=start)
@@ -48,10 +43,8 @@ class MyGUI():
         #5) кнопки старт, пауза, сброс, выход
         self.__init_butt()
         
-        self.main_window.update_idletasks()
+        self.update_status()
         
-        print(self.main_window.winfo_width()) 
-        print(self.main_window.winfo_height()) 
 
         tk.mainloop()
     
@@ -142,8 +135,10 @@ class MyGUI():
     
     def __start(self):
         '''entry in execution flow'''
+        self.main_window.update_idletasks()
+        print(self.main_window.winfo_width()) 
+        print(self.main_window.winfo_height()) 
         #self.__process_status отслеживание в каком статусе поток 1= rest, 2= work, 3=pause from rest, 4= pause from work (+4=start)
-        #написать логику отслеживания фазы и секунд до конца
         if self.__process_status==3:
             self.__process_status=1
             self.schedule_tick()
