@@ -24,7 +24,7 @@ class MyGUI():
         self.ENTRY_WIDTH = 5 #в символах
         self.FONT_STATUS=("Times","24","bold")
         self.FONT_MINS=("Times","32","bold")
-        self.COLOR_REST="#00ff00"
+        self.COLOR_REST="#3BBF77"
         self.COLOR_PAUSE="#808080"
         self.COLOR_WORK="#3B77BC"
         self.MINUT = 60
