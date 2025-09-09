@@ -1,14 +1,7 @@
-import time
 import os
 import sys
 import tkinter as tk
 from tkinter import messagebox as mb
-
-# Константы
-FILE1 = "Work.mp3" #дефолтные пути
-FILE2 = "Rest.mp3"
-MINUT = 60
-COUNTER_TO = 4 #потом изменяется по желанию
 
 # Функция для очистки консоли
 def clear_screen():
@@ -17,42 +10,6 @@ def clear_screen():
         os.system("cls")
     else:
         os.system("clear")
-
-# Функция для воспроизведения файла системным плеером
-def play_audio(file_path):
-    platform= sys.platform
-    if platform == "win32":
-        os.system(f'start "" "{file_path}"')
-    elif platform == "darwin":  # macOS
-        os.system(f'open "{file_path}"')
-    else:  # Linux
-        os.system(f'mpg123 "{file_path}"')
-
-# Основной цикл
-# 25 min = 1500
-# 30 min = 1800
-# 5 min = 300
-def main_loop():
-    cycles = 0
-    while True:
-        play_audio(FILE1)
-        for i in range(1500, 0, -10):
-            clear_screen()
-            print(f"Перерыв через: {i//MINUT} минут, {i%MINUT} секунд")
-            time.sleep(10)
-        cycles += 1
-        
-        play_audio(FILE2)
-        if cycles < COUNTER_TO:
-            for i in range(300, 0, -10):
-                clear_screen()
-                print(f"СЕЙЧАС ОТДЫХ!!!\nПродолжить через: {i//MINUT} минут, {i%MINUT} секунд")
-                time.sleep(10)
-        else:
-            for i in range(1800, 0, -10):
-                clear_screen()
-                print(f"СЕЙЧАС БОЛЬШОЙ ОТДЫХ!!!\nПродолжить через: {i//MINUT} минут, {i%MINUT} секунд")
-                time.sleep(10)
 
 class MyGUI():
     def __init__(self):
@@ -71,6 +28,8 @@ class MyGUI():
         self.COLOR_PAUSE="#808080"
         self.COLOR_WORK="#3B77BC"
         self.MINUT = 60
+        self.FILE1 = "Work.mp3" #дефолтные пути
+        self.FILE2 = "Rest.mp3"
         
         #Оформить окошко в духе Win XP 
         self.main_window=tk.Tk()
@@ -275,6 +234,16 @@ class MyGUI():
         elif self.__process_status==2:
             self.__process_status=4
         self.update_status()
+        
+    # Функция для воспроизведения файла системным плеером
+    def play_audio(file_path):
+        platform= sys.platform
+        if platform == "win32":
+            os.system(f'start "" "{file_path}"')
+        elif platform == "darwin":  # macOS
+            os.system(f'open "{file_path}"')
+        else:  # Linux
+            os.system(f'mpg123 "{file_path}"')
 
 if __name__=="__main__":
     #main_loop()
