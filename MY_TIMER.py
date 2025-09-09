@@ -56,8 +56,8 @@ def main_loop():
 
 class MyGUI():
     def __init__(self):
-        self.WIDTH=200
-        self.HEIGHT=50
+        self.WIDTH=289
+        self.HEIGHT=255
         self.DEF_MIN_WORK=25
         self.DEF_MIN_REST=5
         self.DEF_MIN_BIG_REST=30
@@ -89,13 +89,19 @@ class MyGUI():
         #5) кнопки старт, пауза, сброс, выход
         self.__init_butt()
         
+        self.main_window.update_idletasks()
+        
+        print(self.main_window.winfo_width()) 
+        print(self.main_window.winfo_height()) 
+
         tk.mainloop()
     
     #дисплей с текущим статусом 
     def __init_info(self):
-        '''что сейчас за процесс ОТДЫХ/РАБОТА/ПАУЗА при отдыхе
+        '''initialize info widgets'''
+        #что сейчас за процесс ОТДЫХ/РАБОТА/ПАУЗА при отдыхе
         #мейн фон зеленый при работе синий при паузе серый
-        #в эту же рамку сколько минут/секунд до следующего процесса (ОТДЫХ/РАБОТА)'''
+        #в эту же рамку сколько минут/секунд до следующего процесса (ОТДЫХ/РАБОТА)
         # для статуса
         self.frame_info_status=tk.Frame(self.main_window)
         self.frame_info_status.pack(padx=self.PADXY,pady=self.PADXY)
@@ -116,11 +122,11 @@ class MyGUI():
         self.label_mins_1.pack(side="top")
         self.__label_mins_output_label.pack(side="top")
         
-        
     #виджеты для настроек таймера
     def __init_settings(self):
-        '''#окна с текущей конфигурацией сколько минут отдых/работа c возможностью задать время
-        #какой цикл из скольки и сколько минут отдых после них'''
+        '''initializes settings widgets'''
+        #окна с текущей конфигурацией сколько минут отдых/работа c возможностью задать время
+        #какой цикл из скольки и сколько минут отдых после них
         self.frame_set_n_info=tk.Frame(self.main_window)
         self.frame_set_n_info.pack(padx=self.PADXY,pady=self.PADXY)
         self.frame_settings_labels=[]
@@ -158,7 +164,7 @@ class MyGUI():
 
     #Инит кнопок
     def __init_butt(self):
-        '''Buttons initialisation.'''
+        '''Buttons initialization.'''
         self.__frame_butt=tk.Frame(self.main_window)
         
         self.__butt_start=tk.Button(self.__frame_butt,text="Start",command=self.__start)
@@ -176,7 +182,7 @@ class MyGUI():
         self.__frame_butt.pack()
     
     def __start(self):
-        print("we started")
+        '''entry in execution flow'''
         #self.__process_status отслеживание в каком статусе поток 1= rest, 2= work, 3=pause from rest, 4= pause from work (+4=start)
         #написать логику отслеживания фазы и секунд до конца
         if self.__process_status==3:
@@ -203,13 +209,11 @@ class MyGUI():
             self.schedule_tick()
         
     def count_till_next_phase(self):
-        print("we started to count")
+        '''counts for seconds + moves phases'''
         if self.__seconds_till_next_phase>0:
             self.__seconds_till_next_phase-=1
-            self.update_status()
             self.schedule_tick()
         else:
-            print("count ends")
             if self.__process_status==1:
                 self.__process_status=2
             elif self.__process_status==2:
@@ -217,12 +221,13 @@ class MyGUI():
                 self.__cycle+=1
             self.__start()
                 
-                
     def schedule_tick(self):
+        '''tick creator'''
         self.update_status()
         self.id_to_cancel=self.main_window.after(1000,self.count_till_next_phase)
     
     def update_status(self):
+        '''updates status info'''
         minutes, seconds =divmod(self.__seconds_till_next_phase,self.MINUT)
         self.__label_mins_output.set(f"{minutes}:{seconds:02d}")
 
@@ -240,6 +245,7 @@ class MyGUI():
             self.frame_info_minutes["bg"]=self.COLOR_REST
         
     def __reset(self):
+        '''resets flow and updates to specified by user values via entry widgets'''
         try:
             self.main_window.after_cancel(self.id_to_cancel)
         except AttributeError:
@@ -259,6 +265,7 @@ class MyGUI():
         self.update_status()
 
     def __pause(self):
+        '''pauses countdown'''
         try:
             self.main_window.after_cancel(self.id_to_cancel)
         except AttributeError:
