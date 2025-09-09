@@ -67,9 +67,9 @@ class MyGUI():
         self.ENTRY_WIDTH = 5 #в символах
         self.FONT_STATUS=("Times","24","bold")
         self.FONT_MINS=("Times","32","bold")
-        self.COLOR_GREEN="#00ff00"
-        self.COLOR_GREY="#808080"
-        self.COLOR_BLUE="#3B77BC"
+        self.COLOR_REST="#00ff00"
+        self.COLOR_PAUSE="#808080"
+        self.COLOR_WORK="#3B77BC"
         self.MINUT = 60
         
         #Оформить окошко в духе Win XP 
@@ -181,73 +181,94 @@ class MyGUI():
         #написать логику отслеживания фазы и секунд до конца
         if self.__process_status==3:
             self.__process_status=1
-            self.count_till_next_phase()
+            self.schedule_tick()
         elif self.__process_status==4:
             self.__process_status=2
-            self.count_till_next_phase()
-        
-        if self.__cycle>4 and self.__process_status==1:
-            self.__seconds_till_next_phase=self.DEF_MIN_BIG_REST*self.MINUT
-            self.count_till_next_phase()
-
-        if self.__process_status==1: 
-            self.__seconds_till_next_phase=self.DEF_MIN_REST*self.MINUT
-            self.count_till_next_phase()
-        elif self.__process_status==2:
-            self.__seconds_till_next_phase=self.DEF_MIN_WORK*self.MINUT
-            self.count_till_next_phase()
-        
-        self.__start()
+            self.schedule_tick()
+        else:
+            if self.__process_status==1: 
+                self.__seconds_till_next_phase=int(self.DEF_MIN_REST*self.MINUT)
+                self.schedule_tick()
+            elif self.__process_status==2:
+                self.__seconds_till_next_phase=int(self.DEF_MIN_WORK*self.MINUT)
+                self.schedule_tick()
+                
+        if self.__cycle>=self.DEF_AMOUNT_CYCLES:
+            try:
+                self.main_window.after_cancel(self.id_to_cancel)
+            except AttributeError:
+                pass
+            self.__cycle=0
+            self.__seconds_till_next_phase=int(self.DEF_MIN_BIG_REST*self.MINUT)
+            self.schedule_tick()
         
     def count_till_next_phase(self):
         print("we started to count")
-        for i in range(self.__seconds_till_next_phase):
+        if self.__seconds_till_next_phase>0:
             self.__seconds_till_next_phase-=1
             self.update_status()
-            time.sleep(1) #тут брух
-            
-        print("count ends")
-        if self.__process_status==1:
-            self.__process_status=2
-        elif self.__process_status==2:
-            self.__process_status=1
-            self.__cycle+=1
-            
+            self.schedule_tick()
+        else:
+            print("count ends")
+            if self.__process_status==1:
+                self.__process_status=2
+            elif self.__process_status==2:
+                self.__process_status=1
+                self.__cycle+=1
+            self.__start()
+                
+                
+    def schedule_tick(self):
+        self.update_status()
+        self.id_to_cancel=self.main_window.after(1000,self.count_till_next_phase)
     
     def update_status(self):
         minutes, seconds =divmod(self.__seconds_till_next_phase,self.MINUT)
         self.__label_mins_output.set(f"{minutes}:{seconds:02d}")
-    
+
         if self.__process_status==3 or self.__process_status==4: #"PAUSE"
-            self.__output_status.set("PAUSE")              
+            self.__output_status.set("PAUSE")
+            self.frame_info_status["bg"]=self.COLOR_PAUSE
+            self.frame_info_minutes["bg"]=self.COLOR_PAUSE
         elif self.__process_status==2: #WORK
-            self.__output_status.set("WORK") 
+            self.__output_status.set("WORK")
+            self.frame_info_status["bg"]=self.COLOR_WORK
+            self.frame_info_minutes["bg"]=self.COLOR_WORK
         elif self.__process_status==1: #REST
-            self.__output_status.set("REST") 
-            
+            self.__output_status.set("REST")
+            self.frame_info_status["bg"]=self.COLOR_REST
+            self.frame_info_minutes["bg"]=self.COLOR_REST
+        
     def __reset(self):
         try:
-            self.DEF_MIN_WORK=int(self.__entry_settings_mins_work.get())
-            self.DEF_MIN_REST=int(self.__entry_settings_mins_chill.get())
-            self.DEF_MIN_BIG_REST=int(self.__entry_settings_mins_big_chill.get())
+            self.main_window.after_cancel(self.id_to_cancel)
+        except AttributeError:
+            pass
+        try:
+            self.DEF_MIN_WORK=float(self.__entry_settings_mins_work.get())
+            self.DEF_MIN_REST=float(self.__entry_settings_mins_chill.get())
+            self.DEF_MIN_BIG_REST=float(self.__entry_settings_mins_big_chill.get())
             self.DEF_AMOUNT_CYCLES=int(self.__entry_settings_mins_cycle_amount.get())
         except ValueError:
-            mb.showerror("Error","You must use integer value in input field!")
+            mb.showerror("Error","You must use float values in input fields!\nIn cycle amount entry should be integer value!")
         
         self.__process_status=4 #отслеживание в каком статусе поток 1= rest, 2= work, 3=pause from rest, 4= pause from work (+4=start)
-        self.__seconds_till_next_phase=self.MINUT*self.DEF_MIN_WORK
+        self.__seconds_till_next_phase=int(self.MINUT*self.DEF_MIN_WORK)
         self.__cycle=0
+        
+        self.update_status()
 
     def __pause(self):
+        try:
+            self.main_window.after_cancel(self.id_to_cancel)
+        except AttributeError:
+            pass
         if self.__process_status==1:
             self.__process_status=3
         elif self.__process_status==2:
             self.__process_status=4
         self.update_status()
 
-    def __change_colors(self):
-        pass
-        
 if __name__=="__main__":
     #main_loop()
     mygui=MyGUI()
