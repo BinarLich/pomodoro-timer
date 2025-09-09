@@ -2,6 +2,7 @@ import time
 import os
 import sys
 import tkinter as tk
+from tkinter import messagebox as mb
 
 # Константы
 FILE1 = "Work.mp3" #дефолтные пути
@@ -69,11 +70,17 @@ class MyGUI():
         self.COLOR_GREEN="#00ff00"
         self.COLOR_GREY="#808080"
         self.COLOR_BLUE="#3B77BC"
-        MINUT = 60
+        self.MINUT = 60
         
         #Оформить окошко в духе Win XP 
         self.main_window=tk.Tk()
         
+        #инициализация логики
+        self.__process_status=4 #отслеживание в каком статусе поток 1= rest, 2= work, 3=pause from rest, 4= pause from work (+ 4=start)
+        self.__seconds_till_next_phase=self.MINUT*self.DEF_MIN_WORK
+        self.__cycle=0
+        
+        #отслеживание статуса
         self.__init_info()
                         
         #Поля с настройками и всё к ним
@@ -86,11 +93,9 @@ class MyGUI():
     
     #дисплей с текущим статусом 
     def __init_info(self):
-        #1) что сейчас за процесс ОТДЫХ/РАБОТА/ПАУЗА при отдыхе
+        '''что сейчас за процесс ОТДЫХ/РАБОТА/ПАУЗА при отдыхе
         #мейн фон зеленый при работе синий при паузе серый
-        #в эту же рамку сколько минут/секунд до следующего процесса (ОТДЫХ/РАБОТА)
-        self.__process_status=3 #отслеживание в каком статусе поток 1= rest, 2= work, 3=pause
-        
+        #в эту же рамку сколько минут/секунд до следующего процесса (ОТДЫХ/РАБОТА)'''
         # для статуса
         self.frame_info_status=tk.Frame(self.main_window)
         self.frame_info_status.pack(padx=self.PADXY,pady=self.PADXY)
@@ -104,26 +109,23 @@ class MyGUI():
         self.frame_info_minutes.pack(padx=self.PADXY,pady=self.PADXY)
         
         self.label_mins_1 =tk.Label(self.frame_info_minutes,text="Until the end of current phase is:")
-        #self.label_mins_2 =tk.Label(self.frame_info_minutes,text="minutes")
               
         self.__label_mins_output=tk.StringVar()
         self.__label_mins_output_label=tk.Label(self.frame_info_minutes,textvariable=self.__label_mins_output,font=self.FONT_MINS)
         
         self.label_mins_1.pack(side="top")
         self.__label_mins_output_label.pack(side="top")
-        #self.label_mins_2.pack(side="top")
         
         
     #виджеты для настроек таймера
     def __init_settings(self):
-        #2) окна с текущей конфигурацией сколько минут отдых/работа c возможностью задать время
-        #3) какой цикл из скольки (сделать задаваемым) и сколько минут отдых после них
-        #для 2-3, 3 рамки общую композицию, по одной для виджетов и лейблов, сверху поясняющие
+        '''#окна с текущей конфигурацией сколько минут отдых/работа c возможностью задать время
+        #какой цикл из скольки и сколько минут отдых после них'''
         self.frame_set_n_info=tk.Frame(self.main_window)
         self.frame_set_n_info.pack(padx=self.PADXY,pady=self.PADXY)
         self.frame_settings_labels=[]
 
-        self.label_settings_description=tk.Label(self.frame_set_n_info,text="You can specify amount of minutes for phases:")
+        self.label_settings_description=tk.Label(self.frame_set_n_info,text="Hit reset to specify amount of minutes for phases:")
         self.label_settings_description.pack(side="top",padx=self.PADXY)
         
         for i in range(4):
@@ -144,22 +146,16 @@ class MyGUI():
         self.__entry_settings_mins_work.insert(0,self.DEF_MIN_WORK)
         self.__entry_settings_mins_chill=tk.Entry(self.frame_settings_labels[1],width=self.ENTRY_WIDTH,justify=tk.RIGHT)
         self.__entry_settings_mins_chill.insert(0,self.DEF_MIN_REST)
-        self.__entry_settings_mins_cycle_amount=tk.Entry(self.frame_settings_labels[2],width=self.ENTRY_WIDTH,justify=tk.RIGHT)
-        self.__entry_settings_mins_cycle_amount.insert(0,self.DEF_AMOUNT_CYCLES)
-        self.__entry_settings_mins_big_chill=tk.Entry(self.frame_settings_labels[3],width=self.ENTRY_WIDTH,justify=tk.RIGHT)
+        self.__entry_settings_mins_big_chill=tk.Entry(self.frame_settings_labels[2],width=self.ENTRY_WIDTH,justify=tk.RIGHT)
         self.__entry_settings_mins_big_chill.insert(0,self.DEF_MIN_BIG_REST)
+        self.__entry_settings_mins_cycle_amount=tk.Entry(self.frame_settings_labels[3],width=self.ENTRY_WIDTH,justify=tk.RIGHT)
+        self.__entry_settings_mins_cycle_amount.insert(0,self.DEF_AMOUNT_CYCLES)
         
         self.__entry_settings_mins_work.pack(padx=(self.PADXY))
         self.__entry_settings_mins_chill.pack(padx=(self.PADXY))
         self.__entry_settings_mins_cycle_amount.pack(padx=(self.PADXY))
         self.__entry_settings_mins_big_chill.pack(padx=(self.PADXY))
 
-        #self.frame_settings_labels.pack(padx=self.PADXY)
-        #self.frame_settings.pack(padx=self.PADXY,pady=self.PADXY_s)
-        # в следующий раз я выберу писать это в цикле, а не "понятные" названия переменных. гавно
-        
-
-    
     #Инит кнопок
     def __init_butt(self):
         '''Buttons initialisation.'''
@@ -180,11 +176,75 @@ class MyGUI():
         self.__frame_butt.pack()
     
     def __start(self):
-        pass
+        print("we started")
+        #self.__process_status отслеживание в каком статусе поток 1= rest, 2= work, 3=pause from rest, 4= pause from work (+4=start)
+        #написать логику отслеживания фазы и секунд до конца
+        if self.__process_status==3:
+            self.__process_status=1
+            self.count_till_next_phase()
+        elif self.__process_status==4:
+            self.__process_status=2
+            self.count_till_next_phase()
+        
+        if self.__cycle>4 and self.__process_status==1:
+            self.__seconds_till_next_phase=self.DEF_MIN_BIG_REST*self.MINUT
+            self.count_till_next_phase()
+
+        if self.__process_status==1: 
+            self.__seconds_till_next_phase=self.DEF_MIN_REST*self.MINUT
+            self.count_till_next_phase()
+        elif self.__process_status==2:
+            self.__seconds_till_next_phase=self.DEF_MIN_WORK*self.MINUT
+            self.count_till_next_phase()
+        
+        self.__start()
+        
+    def count_till_next_phase(self):
+        print("we started to count")
+        for i in range(self.__seconds_till_next_phase):
+            self.__seconds_till_next_phase-=1
+            self.update_status()
+            time.sleep(1) #тут брух
+            
+        print("count ends")
+        if self.__process_status==1:
+            self.__process_status=2
+        elif self.__process_status==2:
+            self.__process_status=1
+            self.__cycle+=1
+            
+    
+    def update_status(self):
+        minutes, seconds =divmod(self.__seconds_till_next_phase,self.MINUT)
+        self.__label_mins_output.set(f"{minutes}:{seconds:02d}")
+    
+        if self.__process_status==3 or self.__process_status==4: #"PAUSE"
+            self.__output_status.set("PAUSE")              
+        elif self.__process_status==2: #WORK
+            self.__output_status.set("WORK") 
+        elif self.__process_status==1: #REST
+            self.__output_status.set("REST") 
+            
     def __reset(self):
-        pass
+        try:
+            self.DEF_MIN_WORK=int(self.__entry_settings_mins_work.get())
+            self.DEF_MIN_REST=int(self.__entry_settings_mins_chill.get())
+            self.DEF_MIN_BIG_REST=int(self.__entry_settings_mins_big_chill.get())
+            self.DEF_AMOUNT_CYCLES=int(self.__entry_settings_mins_cycle_amount.get())
+        except ValueError:
+            mb.showerror("Error","You must use integer value in input field!")
+        
+        self.__process_status=4 #отслеживание в каком статусе поток 1= rest, 2= work, 3=pause from rest, 4= pause from work (+4=start)
+        self.__seconds_till_next_phase=self.MINUT*self.DEF_MIN_WORK
+        self.__cycle=0
+
     def __pause(self):
-        pass
+        if self.__process_status==1:
+            self.__process_status=3
+        elif self.__process_status==2:
+            self.__process_status=4
+        self.update_status()
+
     def __change_colors(self):
         pass
         
