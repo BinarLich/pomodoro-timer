@@ -258,21 +258,31 @@ class MyGUI():
             
     # Другая функция для воспроизведения, без диалогового окна но с зависимостью от playsound
     def play_audio(self,file_path):
+        if not os.path.exists(file_path):
+            print(f"Audio file not found: {file_path}")
+            mb.showerror("Error",f"Audio file not found at: {file_path}")
         try:
-            self.in_thread=threading.Thread(target=playsound.playsound, args=(file_path,)) 
-            self.in_thread.start()
+            in_thread=threading.Thread(target=self.play_audio_thread, args=(file_path,),daemon=True) 
+            in_thread.start()
         except RuntimeError:
             print("Thread to play sound can't be created")
             mb.showerror("Error", "Thread to play sound can't be created")
-        except (FileNotFoundError, UnicodeDecodeError) as err:
+        except Exception as err:
+            print(err)
+            mb.showerror("Error", "Error with sound-player.\n"+str(err))
+            
+    def play_audio_thread(self,file_path):
+        try:
+            playsound.playsound(file_path)
+        except  UnicodeDecodeError as err:
             print(f"File not found at this path: {file_path}")
             print("Or pathway contains characters that cant be decoded right.")
             mb.showerror(f"Error","File not found at this path: {file_path}."+
                          "\nOr pathway contains characters that cant be decoded right."+
-                         "\n"+err)
+                         f"\n{err}")
         except Exception as err:
             print(err)
-            mb.showerror("Error", "Error with sound-player.\n"+err)
+            mb.showerror("Error", "Error with sound-player.\n"+str(err))
             
     def process_path(self):
         if not os.path.exists(self.PATH_TO_CHECK_PATHFILE):
@@ -283,17 +293,24 @@ class MyGUI():
             for line in self.file:
                 line=line.strip()
                 if not line.startswith("#") and line:
-                    paths.append(line)
+                    #у playsound какие-то проблемы с относительными путями
+                    if not os.path.isabs(line):
+                        line=os.path.abspath(line)
+                        paths.append(line)
+                    else:
+                        paths.append(line)
             if len(paths)==2:
+                
                 self.path_to_rest=os.path.normpath(paths[0])
                 self.path_to_work=os.path.normpath(paths[1])
+
             else:
                 mb.showerror("Error", "You have more paths than two.")
                                         
         except Exception as err:
-            mb.showerror("Error", "Error with path-reader\n"+err)
+            mb.showerror("Error", "Error with path-reader\n"+str(err))
         else:
-            print("Path read successfully.",paths)
+            print("Path read successfully.",self.path_to_rest,self.path_to_work)
         finally:
             self.file.close()
         
