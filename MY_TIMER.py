@@ -1,16 +1,15 @@
 import os
 import sys
+import threading
+import playsound
 import tkinter as tk
 from tkinter import messagebox as mb
 
 class MyGUI():
     def __init__(self):
+        
         self.WIDTH=336 #289 
         self.HEIGHT=255 #255
-        self.DEF_MIN_WORK=25
-        self.DEF_MIN_REST=5
-        self.DEF_MIN_BIG_REST=30
-        self.DEF_AMOUNT_CYCLES=4
         self.PADXY=5 # в пикселях
         self.PADXY_s=2 
         self.ENTRY_WIDTH = 5 #в символах
@@ -20,8 +19,15 @@ class MyGUI():
         self.COLOR_PAUSE="#808080"
         self.COLOR_WORK="#3B77BC"
         self.MINUT = 60
-        self.PATH_TO_WORK = "Work.mp3" #дефолтные пути
-        self.PATH_TO_REST = "Rest.mp3"
+        self.PATH_TO_CHECK_PATHFILE="path.txt"
+        
+        self.path_to_work = "Work.mp3" #дефолтные пути
+        self.path_to_rest = "Rest.mp3"
+        self.def_min_work=25
+        self.def_min_rest=5
+        self.def_min_big_rest=30
+        self.def_amount_cycles=4
+        
         
         #Оформить окошко
         self.main_window=tk.Tk()
@@ -31,7 +37,7 @@ class MyGUI():
         
         #инициализация логики
         self.__process_status=4 #отслеживание в каком статусе поток 1= rest, 2= work, 3=pause from rest, 4= pause from work (+ 4=start)
-        self.__seconds_till_next_phase=self.MINUT*self.DEF_MIN_WORK
+        self.__seconds_till_next_phase=self.MINUT*self.def_min_work
         self.__cycle=0
         
         #отслеживание статуса
@@ -101,13 +107,13 @@ class MyGUI():
         self.label_settings_mins_cycle_count.pack(padx=self.PADXY)
                 
         self.__entry_settings_mins_work=tk.Entry(self.frame_settings_labels[0],width=self.ENTRY_WIDTH,justify=tk.RIGHT)
-        self.__entry_settings_mins_work.insert(0,self.DEF_MIN_WORK)
+        self.__entry_settings_mins_work.insert(0,self.def_min_work)
         self.__entry_settings_mins_chill=tk.Entry(self.frame_settings_labels[1],width=self.ENTRY_WIDTH,justify=tk.RIGHT)
-        self.__entry_settings_mins_chill.insert(0,self.DEF_MIN_REST)
+        self.__entry_settings_mins_chill.insert(0,self.def_min_rest)
         self.__entry_settings_mins_big_chill=tk.Entry(self.frame_settings_labels[2],width=self.ENTRY_WIDTH,justify=tk.RIGHT)
-        self.__entry_settings_mins_big_chill.insert(0,self.DEF_MIN_BIG_REST)
+        self.__entry_settings_mins_big_chill.insert(0,self.def_min_big_rest)
         self.__entry_settings_mins_cycle_amount=tk.Entry(self.frame_settings_labels[3],width=self.ENTRY_WIDTH,justify=tk.RIGHT)
-        self.__entry_settings_mins_cycle_amount.insert(0,self.DEF_AMOUNT_CYCLES)
+        self.__entry_settings_mins_cycle_amount.insert(0,self.def_amount_cycles)
         
         self.__entry_settings_mins_work.pack(padx=(self.PADXY))
         self.__entry_settings_mins_chill.pack(padx=(self.PADXY))
@@ -141,29 +147,29 @@ class MyGUI():
         #self.__process_status отслеживание в каком статусе поток 1= rest, 2= work, 3=pause from rest, 4= pause from work (+4=start)
         if self.__process_status==3:
             self.__process_status=1
-            self.play_audio(self.PATH_TO_REST)
+            self.play_audio(self.path_to_rest)
             self.schedule_tick()
         elif self.__process_status==4:
             self.__process_status=2
-            self.play_audio(self.PATH_TO_WORK)
+            self.play_audio(self.path_to_work)
             self.schedule_tick()
         else:
             if self.__process_status==1: 
-                self.__seconds_till_next_phase=int(self.DEF_MIN_REST*self.MINUT)
-                self.play_audio(self.PATH_TO_REST)
+                self.__seconds_till_next_phase=int(self.def_min_rest*self.MINUT)
+                self.play_audio(self.path_to_rest)
                 self.schedule_tick()
             elif self.__process_status==2:
-                self.__seconds_till_next_phase=int(self.DEF_MIN_WORK*self.MINUT)
-                self.play_audio(self.PATH_TO_WORK)
+                self.__seconds_till_next_phase=int(self.def_min_work*self.MINUT)
+                self.play_audio(self.path_to_work)
                 self.schedule_tick()
                 
-        if self.__cycle>=self.DEF_AMOUNT_CYCLES:
+        if self.__cycle>=self.def_amount_cycles:
             try:
                 self.main_window.after_cancel(self.id_to_cancel)
             except AttributeError:
                 pass
             self.__cycle=0
-            self.__seconds_till_next_phase=int(self.DEF_MIN_BIG_REST*self.MINUT)
+            self.__seconds_till_next_phase=int(self.def_min_big_rest*self.MINUT)
             self.schedule_tick()
         
     def count_till_next_phase(self):
@@ -178,7 +184,7 @@ class MyGUI():
                 self.__process_status=1
                 self.__cycle+=1
             self.__start()
-                
+
     def schedule_tick(self):
         '''tick creator'''
         self.update_status()
@@ -209,15 +215,15 @@ class MyGUI():
         except AttributeError:
             pass
         try:
-            self.DEF_MIN_WORK=float(self.__entry_settings_mins_work.get())
-            self.DEF_MIN_REST=float(self.__entry_settings_mins_chill.get())
-            self.DEF_MIN_BIG_REST=float(self.__entry_settings_mins_big_chill.get())
-            self.DEF_AMOUNT_CYCLES=int(self.__entry_settings_mins_cycle_amount.get())
+            self.def_min_work=float(self.__entry_settings_mins_work.get())
+            self.def_min_rest=float(self.__entry_settings_mins_chill.get())
+            self.def_min_big_rest=float(self.__entry_settings_mins_big_chill.get())
+            self.def_amount_cycles=int(self.__entry_settings_mins_cycle_amount.get())
         except ValueError:
             mb.showerror("Error","You must use float values in input fields!\nIn cycle amount entry should be integer value!")
         
         self.__process_status=4 #отслеживание в каком статусе поток 1= rest, 2= work, 3=pause from rest, 4= pause from work (+4=start)
-        self.__seconds_till_next_phase=int(self.MINUT*self.DEF_MIN_WORK)
+        self.__seconds_till_next_phase=int(self.MINUT*self.def_min_work)
         self.__cycle=0
         
         self.update_status()
@@ -234,8 +240,8 @@ class MyGUI():
             self.__process_status=4
         self.update_status()
         
-    # Функция для воспроизведения файла системным плеером
-    def play_audio(self,file_path):
+    # Функция для воспроизведения файла системным плеером с открытием окна (не используется)
+    def play_audio_old(self,file_path):
         platform= sys.platform
         if platform == "win32":
             os.system(f'start "" "{file_path}"')
@@ -243,7 +249,46 @@ class MyGUI():
             os.system(f'open "{file_path}"')
         else:  # Linux
             os.system(f'mpg123 "{file_path}"')
+            
+    # Другая функция для воспроизведения, без диалогового окна но с зависимостью от playsound
+    def play_audio(self,file_path):
+        try:
+            in_thread=threading.Thread(target=playsound.playsound, args=(file_path,)) 
+            in_thread.start()
+        except RuntimeError:
+            print("Thread to play sound can't be created")
+            mb.showerror("Error", "Thread to play sound can't be created")
+        except (FileNotFoundError, UnicodeDecodeError) as err:
+            print("File not found at this path: {file_path}")
+            print("Or pathway contains characters that cant be decoded right.")
+            mb.showerror("Error","File not found at this path: {file_path}."+
+                         "\nOr pathway contains characters that cant be decoded right."+
+                         "\n"+err)
+        except Exception as err:
+            print(err)
+            mb.showerror("Error", "Error with sound-player.\n"+err)
+            
+    def process_path(self):
+        if not os.path.exists(self.PATH_TO_CHECK_PATHFILE):
+            return
 
+        paths=[]
+        try:
+            self.file=open("path.txt","r")
+            for line in self.file:
+                line.strip()
+                if not line.startswith("#") and line:
+                    paths.append(line)
+            if len(paths)==2:
+                self.path_to_rest=paths[0]
+                self.path_to_work=paths[1]
+            else:
+                mb.showerror("Error", "You have more paths than two.")
+                                        
+        except Exception as err:
+            mb.showerror("Error", "Error with path-reader\n"+err)
+        finally:
+            self.file.close()
+        
 if __name__=="__main__":
-    #main_loop()
     mygui=MyGUI()
