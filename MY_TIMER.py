@@ -32,7 +32,10 @@ class MyGUI():
         #Оформить окошко
         self.main_window=tk.Tk()
         self.main_window.title("Timer by @BinarLich")
-        self.main_window.iconphoto(True, tk.PhotoImage(file="icon.png"))
+        try:
+            self.main_window.iconphoto(True, tk.PhotoImage(file="icon.png"))
+        except Exception:
+            print("not found icon.png")
         #self.main_window.geometry(f"{self.WIDTH}x{self.HEIGHT}")
         
         #инициализация логики
@@ -51,6 +54,7 @@ class MyGUI():
         
         self.update_status()
         
+        self.process_path()
 
         tk.mainloop()
     
@@ -226,6 +230,8 @@ class MyGUI():
         self.__seconds_till_next_phase=int(self.MINUT*self.def_min_work)
         self.__cycle=0
         
+        self.process_path()
+        
         self.update_status()
 
     def __pause(self):
@@ -253,15 +259,15 @@ class MyGUI():
     # Другая функция для воспроизведения, без диалогового окна но с зависимостью от playsound
     def play_audio(self,file_path):
         try:
-            in_thread=threading.Thread(target=playsound.playsound, args=(file_path,)) 
-            in_thread.start()
+            self.in_thread=threading.Thread(target=playsound.playsound, args=(file_path,)) 
+            self.in_thread.start()
         except RuntimeError:
             print("Thread to play sound can't be created")
             mb.showerror("Error", "Thread to play sound can't be created")
         except (FileNotFoundError, UnicodeDecodeError) as err:
-            print("File not found at this path: {file_path}")
+            print(f"File not found at this path: {file_path}")
             print("Or pathway contains characters that cant be decoded right.")
-            mb.showerror("Error","File not found at this path: {file_path}."+
+            mb.showerror(f"Error","File not found at this path: {file_path}."+
                          "\nOr pathway contains characters that cant be decoded right."+
                          "\n"+err)
         except Exception as err:
@@ -271,22 +277,23 @@ class MyGUI():
     def process_path(self):
         if not os.path.exists(self.PATH_TO_CHECK_PATHFILE):
             return
-
         paths=[]
         try:
             self.file=open("path.txt","r")
             for line in self.file:
-                line.strip()
+                line=line.strip()
                 if not line.startswith("#") and line:
                     paths.append(line)
             if len(paths)==2:
-                self.path_to_rest=paths[0]
-                self.path_to_work=paths[1]
+                self.path_to_rest=os.path.normpath(paths[0])
+                self.path_to_work=os.path.normpath(paths[1])
             else:
                 mb.showerror("Error", "You have more paths than two.")
                                         
         except Exception as err:
             mb.showerror("Error", "Error with path-reader\n"+err)
+        else:
+            print("Path read successfully.",paths)
         finally:
             self.file.close()
         
