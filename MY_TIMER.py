@@ -1,7 +1,8 @@
 import os
 import sys
 import threading
-import playsound
+from pygame import mixer 
+import time
 import tkinter as tk
 from tkinter import messagebox as mb
 
@@ -27,7 +28,21 @@ class MyGUI():
         self.def_min_rest=5
         self.def_min_big_rest=30
         self.def_amount_cycles=4
+        self.sound_enabled=True
+        #инициализация логики
+        self.__process_status=4 #отслеживание в каком статусе поток 1= rest, 2= work, 3=pause from rest, 4= pause from work (+ 4=start)
+        self.__seconds_till_next_phase=self.MINUT*self.def_min_work
+        self.__cycle=0
         
+        self.buttons_dict={
+            "Start":lambda : self.__start (),
+            "Pause":lambda : self.__pause (),
+            "Reset":lambda : self.__reset (),
+            "Sound-":lambda : self.sound_enabler(),
+            "Exit":lambda : self.main_window.destroy()
+            }
+        
+        #self.threads_pool=ThreadPoolExecutor(max_workers=3) 
         
         #Оформить окошко
         self.main_window=tk.Tk()
@@ -36,13 +51,7 @@ class MyGUI():
             self.main_window.iconphoto(True, tk.PhotoImage(file="icon.png"))
         except Exception:
             print("not found icon.png")
-        #self.main_window.geometry(f"{self.WIDTH}x{self.HEIGHT}")
-        
-        #инициализация логики
-        self.__process_status=4 #отслеживание в каком статусе поток 1= rest, 2= work, 3=pause from rest, 4= pause from work (+ 4=start)
-        self.__seconds_till_next_phase=self.MINUT*self.def_min_work
-        self.__cycle=0
-        
+                
         #отслеживание статуса
         self.__init_info()
                         
@@ -127,9 +136,18 @@ class MyGUI():
     #Инит кнопок
     def __init_butt(self):
         '''Buttons initialization.'''
+        self.__butts=[]
+        
         self.__frame_butt=tk.Frame(self.main_window)
         
-        self.__butt_start=tk.Button(self.__frame_butt,text="Start",command=self.__start)
+        for k,v in self.buttons_dict.items():
+            butt=tk.Button(self.__frame_butt,text=k,command=v)
+            butt.pack(side="left",padx=self.PADXY,pady=self.PADXY)
+            self.__butts.append(butt)
+
+        
+        
+        '''self.__butt_start=tk.Button(self.__frame_butt,text="Start",command=self.__start)
         self.__butt_start.pack(side="left",padx=self.PADXY,pady=self.PADXY)
         
         self.__butt_pause=tk.Button(self.__frame_butt,text="Pause",command=self.__pause)
@@ -138,44 +156,28 @@ class MyGUI():
         self.__butt_reset=tk.Button(self.__frame_butt,text="Reset",command=self.__reset)
         self.__butt_reset.pack(side="left",padx=self.PADXY,pady=self.PADXY)
         
+        self.__butt_audio=tk.Button(self.__frame_butt,text="Sound-",command=self.sound_enabler)
+        self.__butt_audio.pack(side="left",padx=self.PADXY,pady=self.PADXY)
+        
         self.__butt_exit=tk.Button(self.__frame_butt,text="Exit",command=self.main_window.destroy)
-        self.__butt_exit.pack(side="left",padx=self.PADXY,pady=self.PADXY)
+        self.__butt_exit.pack(side="left",padx=self.PADXY,pady=self.PADXY)'''
         
         self.__frame_butt.pack()
-    
+        
     def __start(self):
         '''entry in execution flow, logic of flow'''
-        #self.main_window.update_idletasks()
-        #print(self.main_window.winfo_width()) 
-        #print(self.main_window.winfo_height()) 
         #self.__process_status отслеживание в каком статусе поток 1= rest, 2= work, 3=pause from rest, 4= pause from work (+4=start)
         if self.__process_status==3:
             self.__process_status=1
-            self.play_audio(self.path_to_rest)
+            if self.sound_enabled:
+                self.play_audio(self.path_to_rest)
             self.schedule_tick()
         elif self.__process_status==4:
             self.__process_status=2
-            self.play_audio(self.path_to_work)
-            self.schedule_tick()
-        else:
-            if self.__process_status==1: 
-                self.__seconds_till_next_phase=int(self.def_min_rest*self.MINUT)
-                self.play_audio(self.path_to_rest)
-                self.schedule_tick()
-            elif self.__process_status==2:
-                self.__seconds_till_next_phase=int(self.def_min_work*self.MINUT)
+            if self.sound_enabled:
                 self.play_audio(self.path_to_work)
-                self.schedule_tick()
-                
-        if self.__cycle>=self.def_amount_cycles:
-            try:
-                self.main_window.after_cancel(self.id_to_cancel)
-            except AttributeError:
-                pass
-            self.__cycle=0
-            self.__seconds_till_next_phase=int(self.def_min_big_rest*self.MINUT)
             self.schedule_tick()
-        
+
     def count_till_next_phase(self):
         '''counts for seconds + moves phases'''
         if self.__seconds_till_next_phase>0:
@@ -184,10 +186,26 @@ class MyGUI():
         else:
             if self.__process_status==1:
                 self.__process_status=2
+                self.__seconds_till_next_phase=int(self.def_min_rest*self.MINUT)
+                if self.sound_enabled:
+                    self.play_audio(self.path_to_work)
+                self.schedule_tick()
             elif self.__process_status==2:
                 self.__process_status=1
                 self.__cycle+=1
-            self.__start()
+                self.__seconds_till_next_phase=int(self.def_min_work*self.MINUT)
+                if self.sound_enabled:
+                    self.play_audio(self.path_to_rest)
+                self.schedule_tick()
+                
+            if self.__cycle>=self.def_amount_cycles:
+                try:
+                    self.main_window.after_cancel(self.id_to_cancel)
+                except AttributeError:
+                    pass
+                self.__cycle=0
+                self.__seconds_till_next_phase=int(self.def_min_big_rest*self.MINUT)
+                self.schedule_tick()
 
     def schedule_tick(self):
         '''tick creator'''
@@ -255,37 +273,50 @@ class MyGUI():
             os.system(f'open "{file_path}"')
         else:  # Linux
             os.system(f'mpg123 "{file_path}"')
+    
+    def sound_enabler(self):
+        if self.in_thread.is_alive():
+            print("Do not use Sound+/Sound- button while player is active")
+        else:
+            if self.sound_enabled:
+                self.sound_enabled=False
+                self.__butts[3].config(text="Sound+") 
+            else:
+                self.sound_enabled=True
+                self.__butts[3].config(text="Sound-")
             
     # Другая функция для воспроизведения, без диалогового окна но с зависимостью от playsound
     def play_audio(self,file_path):
+        '''Planning audio player'''
         if not os.path.exists(file_path):
             print(f"Audio file not found: {file_path}")
             mb.showerror("Error",f"Audio file not found at: {file_path}")
         try:
-            in_thread=threading.Thread(target=self.play_audio_thread, args=(file_path,),daemon=True) 
-            in_thread.start()
+            self.in_thread=threading.Thread(target=self.play_audio_thread, args=(file_path,),daemon=True) 
+            self.in_thread.start()
         except RuntimeError:
             print("Thread to play sound can't be created")
             mb.showerror("Error", "Thread to play sound can't be created")
         except Exception as err:
             print(err)
             mb.showerror("Error", "Error with sound-player.\n"+str(err))
-            
+     
     def play_audio_thread(self,file_path):
+        '''To be done by thread, plays audio'''
         try:
-            playsound.playsound(file_path)
-        except  UnicodeDecodeError as err:
-            print(f"File not found at this path: {file_path}")
-            print("Or pathway contains characters that cant be decoded right.")
-            mb.showerror(f"Error","File not found at this path: {file_path}."+
-                         "\nOr pathway contains characters that cant be decoded right."+
-                         f"\n{err}")
+            mixer.init()
+            mixer.music.load(file_path)
+            mixer.music.play()
+            while mixer.music.get_busy():
+                time.sleep(0.1)
+            mixer.quit()
         except Exception as err:
             print(err)
-            mb.showerror("Error", "Error with sound-player.\n"+str(err))
+            #mb.showerror("Error", "Error with sound-player.\n"+str(err))
             
     def process_path(self):
-        if not os.path.exists(self.PATH_TO_CHECK_PATHFILE):
+        '''Processing path to needed form'''
+        if not os.path.exists(self.PATH_TO_CHECK_PATHFILE) or not self.sound_enabled:
             return
         paths=[]
         try:
