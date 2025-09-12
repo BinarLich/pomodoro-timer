@@ -24,25 +24,38 @@ class MyGUI():
         
         self.path_to_work = "Work.mp3" #дефолтные пути
         self.path_to_rest = "Rest.mp3"
-        self.def_min_work=25
-        self.def_min_rest=5
-        self.def_min_big_rest=30
-        self.def_amount_cycles=4
         self.sound_enabled=True
         #инициализация логики
-        self.__process_status=4 #отслеживание в каком статусе поток 1= rest, 2= work, 3=pause from rest, 4= pause from work (+ 4=start)
-        self.__seconds_till_next_phase=self.MINUT*self.def_min_work
-        self.__cycle=0
         
         self.buttons_dict={
             "Start":lambda : self.__start (),
             "Pause":lambda : self.__pause (),
             "Reset":lambda : self.__reset (),
             "Sound-":lambda : self.sound_enabler(),
-            "Exit":lambda : self.main_window.destroy()
+            "Exit":lambda : (self.main_window.destroy(),mixer.quit())
             }
         
+        self.labels_settings_list=[
+            "Focus:",
+            "Small chill:",
+            "Big chill:",
+            "Cycles:"
+        ]
+        # default minutes values 
+        self.list_with_min_values=[
+            25,    #focus/work
+            5,     #small chill
+            30,    #big chill
+            4      #циклы
+        ]
+        
         #self.threads_pool=ThreadPoolExecutor(max_workers=3) 
+        
+        self.__process_status=4 #отслеживание в каком статусе поток 1= rest, 2= work, 3=pause from rest, 4= pause from work (+ 4=start)
+        self.__seconds_till_next_phase=self.MINUT*self.list_with_min_values[0]
+        self.__cycle=0
+        
+        mixer.init() #инициализировать миксер для проигрывания
         
         #Оформить окошко
         self.main_window=tk.Tk()
@@ -101,6 +114,8 @@ class MyGUI():
         self.frame_set_n_info=tk.Frame(self.main_window)
         self.frame_set_n_info.pack(padx=self.PADXY,pady=self.PADXY)
         self.frame_settings_labels=[]
+        self.label_settings=[]
+        self.__entry_settings=[]
 
         self.label_settings_description=tk.Label(self.frame_set_n_info,text="Hit reset to specify amount of minutes for phases:")
         self.label_settings_description.pack(side="top",padx=self.PADXY)
@@ -108,30 +123,11 @@ class MyGUI():
         for i in range(4):
             self.frame_settings_labels.append(tk.Frame(self.frame_set_n_info))
             self.frame_settings_labels[i].pack(side="left",padx=self.PADXY,pady=self.PADXY)
-
-        self.label_settings_mins_work=tk.Label(self.frame_settings_labels[0],text="Focus:")
-        self.label_settings_mins_chill=tk.Label(self.frame_settings_labels[1],text="Small chill:")
-        self.label_settings_mins_big_chill=tk.Label(self.frame_settings_labels[2],text="Big chill:")
-        self.label_settings_mins_cycle_count=tk.Label(self.frame_settings_labels[3],text="Cycles:")
-        
-        self.label_settings_mins_work.pack(padx=self.PADXY)
-        self.label_settings_mins_chill.pack(padx=self.PADXY)
-        self.label_settings_mins_big_chill.pack(padx=self.PADXY)
-        self.label_settings_mins_cycle_count.pack(padx=self.PADXY)
-                
-        self.__entry_settings_mins_work=tk.Entry(self.frame_settings_labels[0],width=self.ENTRY_WIDTH,justify=tk.RIGHT)
-        self.__entry_settings_mins_work.insert(0,self.def_min_work)
-        self.__entry_settings_mins_chill=tk.Entry(self.frame_settings_labels[1],width=self.ENTRY_WIDTH,justify=tk.RIGHT)
-        self.__entry_settings_mins_chill.insert(0,self.def_min_rest)
-        self.__entry_settings_mins_big_chill=tk.Entry(self.frame_settings_labels[2],width=self.ENTRY_WIDTH,justify=tk.RIGHT)
-        self.__entry_settings_mins_big_chill.insert(0,self.def_min_big_rest)
-        self.__entry_settings_mins_cycle_amount=tk.Entry(self.frame_settings_labels[3],width=self.ENTRY_WIDTH,justify=tk.RIGHT)
-        self.__entry_settings_mins_cycle_amount.insert(0,self.def_amount_cycles)
-        
-        self.__entry_settings_mins_work.pack(padx=(self.PADXY))
-        self.__entry_settings_mins_chill.pack(padx=(self.PADXY))
-        self.__entry_settings_mins_cycle_amount.pack(padx=(self.PADXY))
-        self.__entry_settings_mins_big_chill.pack(padx=(self.PADXY))
+            self.label_settings.append(tk.Label(self.frame_settings_labels[i],text=self.labels_settings_list[i]))
+            self.label_settings[i].pack(padx=self.PADXY)
+            self.__entry_settings.append(tk.Entry(self.frame_settings_labels[i],width=self.ENTRY_WIDTH,justify=tk.RIGHT))
+            self.__entry_settings[i].insert(0,self.list_with_min_values[i])
+            self.__entry_settings[i].pack(padx=(self.PADXY))
 
     #Инит кнопок
     def __init_butt(self):
@@ -145,36 +141,24 @@ class MyGUI():
             butt.pack(side="left",padx=self.PADXY,pady=self.PADXY)
             self.__butts.append(butt)
 
-        
-        
-        '''self.__butt_start=tk.Button(self.__frame_butt,text="Start",command=self.__start)
-        self.__butt_start.pack(side="left",padx=self.PADXY,pady=self.PADXY)
-        
-        self.__butt_pause=tk.Button(self.__frame_butt,text="Pause",command=self.__pause)
-        self.__butt_pause.pack(side="left",padx=self.PADXY,pady=self.PADXY)
-        
-        self.__butt_reset=tk.Button(self.__frame_butt,text="Reset",command=self.__reset)
-        self.__butt_reset.pack(side="left",padx=self.PADXY,pady=self.PADXY)
-        
-        self.__butt_audio=tk.Button(self.__frame_butt,text="Sound-",command=self.sound_enabler)
-        self.__butt_audio.pack(side="left",padx=self.PADXY,pady=self.PADXY)
-        
-        self.__butt_exit=tk.Button(self.__frame_butt,text="Exit",command=self.main_window.destroy)
-        self.__butt_exit.pack(side="left",padx=self.PADXY,pady=self.PADXY)'''
-        
         self.__frame_butt.pack()
         
     def __start(self):
         '''entry in execution flow, logic of flow'''
+        try:
+            mixer.music.unpause()
+        except Exception:
+            print("in __start mixer err")
+            
         #self.__process_status отслеживание в каком статусе поток 1= rest, 2= work, 3=pause from rest, 4= pause from work (+4=start)
         if self.__process_status==3:
             self.__process_status=1
-            if self.sound_enabled:
+            if self.sound_enabled and not mixer.music.get_busy():
                 self.play_audio(self.path_to_rest)
             self.schedule_tick()
         elif self.__process_status==4:
             self.__process_status=2
-            if self.sound_enabled:
+            if self.sound_enabled and not mixer.music.get_busy():
                 self.play_audio(self.path_to_work)
             self.schedule_tick()
 
@@ -186,25 +170,25 @@ class MyGUI():
         else:
             if self.__process_status==1:
                 self.__process_status=2
-                self.__seconds_till_next_phase=int(self.def_min_rest*self.MINUT)
+                self.__seconds_till_next_phase=int(self.list_with_min_values[0]*self.MINUT)
                 if self.sound_enabled:
                     self.play_audio(self.path_to_work)
                 self.schedule_tick()
             elif self.__process_status==2:
                 self.__process_status=1
                 self.__cycle+=1
-                self.__seconds_till_next_phase=int(self.def_min_work*self.MINUT)
+                self.__seconds_till_next_phase=int(self.list_with_min_values[1]*self.MINUT)
                 if self.sound_enabled:
                     self.play_audio(self.path_to_rest)
                 self.schedule_tick()
                 
-            if self.__cycle>=self.def_amount_cycles:
+            if self.__cycle>=self.list_with_min_values[3]:
                 try:
                     self.main_window.after_cancel(self.id_to_cancel)
                 except AttributeError:
                     pass
                 self.__cycle=0
-                self.__seconds_till_next_phase=int(self.def_min_big_rest*self.MINUT)
+                self.__seconds_till_next_phase=int(self.list_with_min_values[2]*self.MINUT)
                 self.schedule_tick()
 
     def schedule_tick(self):
@@ -234,18 +218,18 @@ class MyGUI():
         '''resets flow and updates to specified by user values via entry widgets'''
         try:
             self.main_window.after_cancel(self.id_to_cancel)
+            if mixer.music.get_busy(): #не потокобезопасен отключить если что
+                mixer.music.stop() 
         except AttributeError:
             pass
         try:
-            self.def_min_work=float(self.__entry_settings_mins_work.get())
-            self.def_min_rest=float(self.__entry_settings_mins_chill.get())
-            self.def_min_big_rest=float(self.__entry_settings_mins_big_chill.get())
-            self.def_amount_cycles=int(self.__entry_settings_mins_cycle_amount.get())
+            for i in range(4):
+                self.list_with_min_values[i]=float(self.__entry_settings[i].get())
         except ValueError:
-            mb.showerror("Error","You must use float values in input fields!\nIn cycle amount entry should be integer value!")
+            mb.showerror("Error","You must use float values in input fields!")
         
         self.__process_status=4 #отслеживание в каком статусе поток 1= rest, 2= work, 3=pause from rest, 4= pause from work (+4=start)
-        self.__seconds_till_next_phase=int(self.MINUT*self.def_min_work)
+        self.__seconds_till_next_phase=int(self.MINUT*self.list_with_min_values[0])
         self.__cycle=0
         
         self.process_path()
@@ -256,6 +240,8 @@ class MyGUI():
         '''pauses countdown'''
         try:
             self.main_window.after_cancel(self.id_to_cancel)
+            if mixer.music.get_busy(): #не потокобезопасен отключить если что
+                mixer.music.pause()
         except AttributeError:
             pass
         if self.__process_status==1:
@@ -275,15 +261,13 @@ class MyGUI():
             os.system(f'mpg123 "{file_path}"')
     
     def sound_enabler(self):
-        if self.in_thread.is_alive():
-            print("Do not use Sound+/Sound- button while player is active")
+        '''enables/disables sound'''
+        if self.sound_enabled:
+            self.sound_enabled=False
+            self.__butts[3].config(text="Sound+") 
         else:
-            if self.sound_enabled:
-                self.sound_enabled=False
-                self.__butts[3].config(text="Sound+") 
-            else:
-                self.sound_enabled=True
-                self.__butts[3].config(text="Sound-")
+            self.sound_enabled=True
+            self.__butts[3].config(text="Sound-")
             
     # Другая функция для воспроизведения, без диалогового окна но с зависимостью от playsound
     def play_audio(self,file_path):
@@ -292,7 +276,12 @@ class MyGUI():
             print(f"Audio file not found: {file_path}")
             mb.showerror("Error",f"Audio file not found at: {file_path}")
         try:
-            self.in_thread=threading.Thread(target=self.play_audio_thread, args=(file_path,),daemon=True) 
+            self.in_thread=threading.Thread(
+                target=self.play_audio_thread,
+                args=(file_path, lambda erro:print("Audio thread error.\n",str(erro))),   
+                daemon=True
+                ) 
+            #Добавить ли полноценную колбэк функцию, а не lambda? #mb.showerror("Error", "Error with sound-player.\n"+str(err))
             self.in_thread.start()
         except RuntimeError:
             print("Thread to play sound can't be created")
@@ -301,18 +290,16 @@ class MyGUI():
             print(err)
             mb.showerror("Error", "Error with sound-player.\n"+str(err))
      
-    def play_audio_thread(self,file_path):
+    def play_audio_thread(self,file_path,err_func=None):
         '''To be done by thread, plays audio'''
         try:
-            mixer.init()
             mixer.music.load(file_path)
             mixer.music.play()
             while mixer.music.get_busy():
                 time.sleep(0.1)
-            mixer.quit()
         except Exception as err:
-            print(err)
-            #mb.showerror("Error", "Error with sound-player.\n"+str(err))
+            if err_func:
+                self.main_window.after(0,err_func,err)
             
     def process_path(self):
         '''Processing path to needed form'''
