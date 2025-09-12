@@ -1,8 +1,8 @@
 ![](logo.png)
 
-<div style="text-align:center; font-size:27px; color:#3BBF77; font-weight:700;">
-  <strong>Simple Pomodoro timer written on Python with Tkinter.</strong>
-</div>
+<p style="text-align:center; font-size:27px; color:#3BBF77; font-weight:700;">
+  Simple Pomodoro timer written on Python with Tkinter.
+</p>
 
 ---
 # Overview:
