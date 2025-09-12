@@ -77,6 +77,9 @@ class MyGUI():
         self.update_status()
         
         self.process_path()
+        
+        if not os.path.exists(self.PATH_TO_CHECK_PATHFILE):
+            self.sound_enabled=False
 
         tk.mainloop()
     
@@ -275,7 +278,8 @@ class MyGUI():
         '''Planning audio player'''
         if not os.path.exists(file_path):
             print(f"Audio file not found: {file_path}")
-            mb.showerror("Error",f"Audio file not found at: {file_path}")
+            #mb.showerror("Error",f"Audio file not found at: {file_path}")
+            return
         try:
             self.in_thread=threading.Thread(
                 target=self.play_audio_thread,
