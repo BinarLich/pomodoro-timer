@@ -31,7 +31,7 @@ class MyGUI():
             "Start":lambda : self.__start (),
             "Pause":lambda : self.__pause (),
             "Reset":lambda : self.__reset (),
-            "Sound-":lambda : self.sound_enabler(),
+            "Sound":lambda : self.sound_enabler(),
             "Exit":lambda : (self.main_window.destroy(),mixer.quit())
             }
         
@@ -80,7 +80,7 @@ class MyGUI():
         
         if not os.path.exists(self.PATH_TO_CHECK_PATHFILE):
             self.sound_enabled=False
-            self.__butts[3].config(text="Sound+")
+            self.__butts[3].config(relief=tk.RAISED)
 
         tk.mainloop()
     
@@ -144,6 +144,7 @@ class MyGUI():
             butt=tk.Button(self.__frame_butt,text=k,command=v)
             butt.pack(side="left",padx=self.PADXY,pady=self.PADXY)
             self.__butts.append(butt)
+        self.__butts[3].config(relief=tk.SUNKEN)
 
         self.__frame_butt.pack()
         
@@ -269,10 +270,10 @@ class MyGUI():
         '''enables/disables sound'''
         if self.sound_enabled:
             self.sound_enabled=False
-            self.__butts[3].config(text="Sound+") 
+            self.__butts[3].config(relief=tk.RAISED) 
         else:
             self.sound_enabled=True
-            self.__butts[3].config(text="Sound-")
+            self.__butts[3].config(relief=tk.SUNKEN)
             
     # Другая функция для воспроизведения, без диалогового окна но с зависимостью от playsound
     def play_audio(self,file_path):
