@@ -240,10 +240,11 @@ class MyGUI():
         '''pauses countdown'''
         try:
             self.main_window.after_cancel(self.id_to_cancel)
+            mixer.music.unpause()
             if mixer.music.get_busy(): #не потокобезопасен отключить если что
                 mixer.music.pause()
-        except AttributeError:
-            pass
+        except Exception as err:
+            print("Error in __pause",err)
         if self.__process_status==1:
             self.__process_status=3
         elif self.__process_status==2:
