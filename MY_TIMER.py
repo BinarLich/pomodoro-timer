@@ -80,6 +80,7 @@ class MyGUI():
         
         if not os.path.exists(self.PATH_TO_CHECK_PATHFILE):
             self.sound_enabled=False
+            self.__butts[3].config(text="Sound+")
 
         tk.mainloop()
     
@@ -276,10 +277,14 @@ class MyGUI():
     # Другая функция для воспроизведения, без диалогового окна но с зависимостью от playsound
     def play_audio(self,file_path):
         '''Planning audio player'''
-        if not os.path.exists(file_path):
+        if not self.sound_enabled:
+            print(f"Audio is off.")
+            return
+        elif not os.path.exists(file_path) :
             print(f"Audio file not found: {file_path}")
             #mb.showerror("Error",f"Audio file not found at: {file_path}")
             return
+
         try:
             self.in_thread=threading.Thread(
                 target=self.play_audio_thread,
