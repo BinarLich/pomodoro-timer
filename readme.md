@@ -15,7 +15,7 @@ Simple Pomodoro timer. The timer structures work and break intervals using the P
 
 - You may disable sound not only via button, but to set default disable on start delete `path.txt` file.
 # How to install and run
-___
+
 ## Windows: 
 
 1. Download repo.
