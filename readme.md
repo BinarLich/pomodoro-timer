@@ -20,12 +20,6 @@ Simple Pomodoro timer. The timer structures work and break intervals using the P
 ___
 ## Windows: 
 
-Download latest release in [releases](https://github.com/BinarLich/pomodoro-timer/releases).
-
-<div style="font-size:22px; font-weight:700;">
-  <strong>OR</strong>
-</div>
-
 1. Download repo.
 
 2. Install python via official, as i tested on 3.11.9 link to this version:
