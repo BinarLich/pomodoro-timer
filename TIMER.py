@@ -270,7 +270,9 @@ class MyGUI():
         '''enables/disables sound'''
         if self.sound_enabled:
             self.sound_enabled=False
-            self.__butts[3].config(relief=tk.RAISED) 
+            self.__butts[3].config(relief=tk.RAISED)
+            if mixer.music.get_busy(): #не потокобезопасен отключить если что
+                mixer.music.stop() 
         else:
             self.sound_enabled=True
             self.__butts[3].config(relief=tk.SUNKEN)
