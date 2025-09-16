@@ -46,7 +46,7 @@ python -m pip install -U pygame==2.6.0
 
 # Troubleshoot:
 
-If you have some problems start script with console, it wrutes whats wrong in it.
+If you have some problems start script with console, it writes whats wrong in it.
 
 - On Windows your filename should be `.py`
 - On Linux/Mac start script via terminal.
