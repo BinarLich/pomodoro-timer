@@ -1,4 +1,4 @@
-![](logo.png)
+![](icons\logo.png)
 
 <p align="center">Simple Pomodoro timer written on Python with Tkinter.</p>
 
