@@ -6,8 +6,9 @@ import tkinter as tk
 from tkinter import messagebox as mb
 from pygame import mixer
 
-# Добавить настройки пути внутрь GUI
-# Изменить обображение количества пройденных циклов (добавить)
+# Добавить настройки пути внутрь GUI, туда же настройки тем: темная светлая
+# Изменить отображение количества пройденных циклов (добавить)
+# Собрать в .exe с иконкой
 
 
 class MyGUI:
@@ -29,7 +30,6 @@ class MyGUI:
         self.path_to_work = "Work.mp3"  # дефолтные пути
         self.path_to_rest = "Rest.mp3"
         self.sound_enabled = True
-        # инициализация логики
 
         self.buttons_dict = {
             "Start": lambda: self.__start(),
@@ -80,7 +80,7 @@ class MyGUI:
         # Поля с настройками и всё к ним
         self.__init_settings()
 
-        # 5) кнопки старт, пауза, сброс, выход
+        # кнопки старт, пауза, сброс, выход
         self.__init_butt()
 
         self.update_status()
@@ -374,7 +374,7 @@ class MyGUI:
             if err_func:
                 self.main_window.after(0, err_func, err)
 
-    def process_path(self):
+    def process_path(self):  # переписать, абсолютные пути не используются уже
         """Processing path to needed form"""
         if (
             not os.path.exists(self.PATH_TO_CHECK_PATHFILE)
@@ -387,7 +387,6 @@ class MyGUI:
             for line in self.file:
                 line = line.strip()
                 if not line.startswith("#") and line:
-                    # у playsound какие-то проблемы с относительными путями
                     if not os.path.isabs(line):
                         line = os.path.abspath(line)
                         paths.append(line)
