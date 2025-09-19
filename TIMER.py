@@ -4,10 +4,20 @@ import threading
 import time
 import tkinter as tk
 from tkinter import messagebox as mb
+
 from pygame import mixer
 
+# TO DO:
 # Добавить настройки пути внутрь GUI, туда же настройки тем: темная светлая
 # Изменить отображение количества пройденных циклов (добавить)
+# Объединить Старт и стоп, перенести эту кнопку под таймер сделать большой и удобной,
+# изменить другие кнопки на иконки,
+# сделать переключение паузы-плей кликом по области таймера
+# Сделать автоматическое считывание из Entry при изменении, не по Reset.
+# Пауза между фазами до подтверждения старта пользователем, опционально выбор в настройках.
+# Кнопки перехода на следующую фазу и предыдущую,
+# Отсылать PLAY в систему. (будет воспроизводиться последнее) как на клаве кнопка
+# entry.bind("<FocusOut>", lambda e: print("После редак:", entry.get()))
 # Собрать в .exe с иконкой
 
 
@@ -57,9 +67,7 @@ class MyGUI:
         # отслеживание в каком статусе поток 1= rest, 2= work,
         # 3=pause from rest, 4= pause from work (+ 4=start)
         self.__process_status = 4
-        self.__seconds_till_next_phase = (
-            self.MINUT * self.list_with_min_values[0]
-        )
+        self.__seconds_till_next_phase = self.MINUT * self.list_with_min_values[0]
         self.__cycle = 0
 
         mixer.init()  # инициализировать миксер для проигрывания
@@ -68,9 +76,7 @@ class MyGUI:
         self.main_window = tk.Tk()
         self.main_window.title("Timer by @BinarLich")
         try:
-            self.main_window.iconphoto(
-                True, tk.PhotoImage(file="icons\\icon.png")
-            )
+            self.main_window.iconphoto(True, tk.PhotoImage(file="icons\\icon.png"))
         except Exception:
             print("not found icon.png")
 
@@ -150,9 +156,7 @@ class MyGUI:
 
         for i in range(4):
             self.frame_settings_labels.append(tk.Frame(self.frame_set_n_info))
-            self.frame_settings_labels[i].pack(
-                side="left", padx=self.PADXY, pady=self.PADXY
-            )
+            self.frame_settings_labels[i].pack(side="left", padx=self.PADXY, pady=self.PADXY)
             self.label_settings.append(
                 tk.Label(
                     self.frame_settings_labels[i],
@@ -213,18 +217,14 @@ class MyGUI:
         else:
             if self.__process_status == 1:
                 self.__process_status = 2
-                self.__seconds_till_next_phase = int(
-                    self.list_with_min_values[0] * self.MINUT
-                )
+                self.__seconds_till_next_phase = int(self.list_with_min_values[0] * self.MINUT)
                 if self.sound_enabled:
                     self.play_audio(self.path_to_work)
                 self.schedule_tick()
             elif self.__process_status == 2:
                 self.__process_status = 1
                 self.__cycle += 1
-                self.__seconds_till_next_phase = int(
-                    self.list_with_min_values[1] * self.MINUT
-                )
+                self.__seconds_till_next_phase = int(self.list_with_min_values[1] * self.MINUT)
                 if self.sound_enabled:
                     self.play_audio(self.path_to_rest)
                 self.schedule_tick()
@@ -235,17 +235,13 @@ class MyGUI:
                 except AttributeError:
                     pass
                 self.__cycle = 0
-                self.__seconds_till_next_phase = int(
-                    self.list_with_min_values[2] * self.MINUT
-                )
+                self.__seconds_till_next_phase = int(self.list_with_min_values[2] * self.MINUT)
                 self.schedule_tick()
 
     def schedule_tick(self):
         """tick creator"""
         self.update_status()
-        self.id_to_cancel = self.main_window.after(
-            1000, self.count_till_next_phase
-        )
+        self.id_to_cancel = self.main_window.after(1000, self.count_till_next_phase)
 
     def update_status(self):
         """updates status info"""
@@ -277,18 +273,14 @@ class MyGUI:
             pass
         try:
             for i in range(4):
-                self.list_with_min_values[i] = float(  # type: ignore
-                    self.__entry_settings[i].get()
-                )
+                self.list_with_min_values[i] = float(self.__entry_settings[i].get())  # type: ignore
         except ValueError:
             mb.showerror("Error", "You must use float values in input fields!")
 
         # отслеживание в каком статусе поток 1= rest, 2= work,
         # 3=pause from rest, 4= pause from work (+4=start)
         self.__process_status = 4
-        self.__seconds_till_next_phase = int(
-            self.MINUT * self.list_with_min_values[0]
-        )
+        self.__seconds_till_next_phase = int(self.MINUT * self.list_with_min_values[0])
         self.__cycle = 0
 
         self.process_path()
@@ -376,10 +368,7 @@ class MyGUI:
 
     def process_path(self):  # переписать, абсолютные пути не используются уже
         """Processing path to needed form"""
-        if (
-            not os.path.exists(self.PATH_TO_CHECK_PATHFILE)
-            or not self.sound_enabled
-        ):
+        if not os.path.exists(self.PATH_TO_CHECK_PATHFILE) or not self.sound_enabled:
             return
         paths = []
         try:
@@ -403,9 +392,7 @@ class MyGUI:
         except Exception as err:
             mb.showerror("Error", "Error with path-reader\n" + str(err))
         else:
-            print(
-                "Path read successfully.", self.path_to_rest, self.path_to_work
-            )
+            print("Path read successfully.", self.path_to_rest, self.path_to_work)
         finally:
             self.file.close()
 
