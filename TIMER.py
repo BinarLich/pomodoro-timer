@@ -5,19 +5,32 @@ import time
 import tkinter as tk
 from tkinter import messagebox as mb
 
+# pip install keyboard
+# sends PLAY/PAUSE media to system API, may ask root
+from keyboard import send as send_to_system_api
 from pygame import mixer
 
 # TO DO:
-# Добавить настройки пути внутрь GUI, туда же настройки тем: темная светлая
-# Изменить отображение количества пройденных циклов (добавить)
-# Объединить Старт и стоп, перенести эту кнопку под таймер сделать большой и удобной,
-# изменить другие кнопки на иконки,
-# сделать переключение паузы-плей кликом по области таймера
+
+# Добавить кнопку настроек, внутрь них:
+# 1. настройки тем: темная светлая
+# 2. Настройка пути к файлам .mp3
+# 3.1 отдельная галочка для воспроизводить ли звук
+# 3.2 отдельная галочка для отсылать ли play в system api
+# 4. Перенести все entry в настройки с ползунками
 # Сделать автоматическое считывание из Entry при изменении, не по Reset.
-# Пауза между фазами до подтверждения старта пользователем, опционально выбор в настройках.
-# Кнопки перехода на следующую фазу и предыдущую,
-# Отсылать PLAY в систему. (будет воспроизводиться последнее) как на клаве кнопка
 # entry.bind("<FocusOut>", lambda e: print("После редак:", entry.get()))
+# 4.1 Sound оставить в главном окошке
+# 5 Сделать отдельные reset кнопки одна для циклов другая для в целом настроек на дефолт
+# 6. Галочку для паузы между фазами до подтверждения старта пользователем
+# 7. сохранять и парсить .json для настроек, а не .txt
+
+# Добавить кнопки перехода на следующую фазу и предыдущую,
+
+# Изменить отображение количества пройденных циклов (добавить)
+
+# Почистить код хехе
+
 # Собрать в .exe с иконкой
 
 
@@ -28,9 +41,12 @@ class MyGUI:
         self.HEIGHT = 255  # 255
         self.PADXY = 5  # в пикселях
         self.PADXY_s = 2
+        self.PADXY_ss = 0  # в info - между минутами и статусом
         self.ENTRY_WIDTH = 5  # в символах
         self.FONT_STATUS = ("Times", "24", "bold")
         self.FONT_MINS = ("Times", "32", "bold")
+        self.PADX_STATUS_LABEL = 0
+        self.PADY_STATUS_LABEL = 0
         self.COLOR_REST = "#3BBF77"
         self.COLOR_PAUSE = "#808080"
         self.COLOR_WORK = "#3B77BC"
@@ -41,12 +57,20 @@ class MyGUI:
         self.path_to_rest = "Rest.mp3"
         self.sound_enabled = True
 
+        self.sound_api_enabled = True
+        self.pause_between_phases_needed = False  # False отключить паузу между фазами
+
         self.buttons_dict = {
-            "Start": lambda: self.__start(),
-            "Pause": lambda: self.__pause(),
-            "Reset": lambda: self.__reset(),
-            "Sound": lambda: self.sound_enabler(),
-            "Exit": lambda: (self.main_window.destroy(), mixer.quit()),
+            "End-pause": lambda: self.pause_between_phases_toggle(),
+            "Media": lambda: self.sound_api_enabler(),
+            "↺ Reset": lambda: self.__reset(),
+            "♫ Sound": lambda: self.sound_enabler(),
+            "Exit": lambda: (mixer.quit(), self.main_window.destroy()),
+        }
+        self.STATUS_TITLE = {
+            "pause": "⏸PAUSE",
+            "focus": "▶FOCUS",
+            "rest": "REST",
         }
 
         self.labels_settings_list = [
@@ -63,14 +87,14 @@ class MyGUI:
             4,  # циклы
         ]
 
-        # self.threads_pool=ThreadPoolExecutor(max_workers=3)
-        # отслеживание в каком статусе поток 1= rest, 2= work,
-        # 3=pause from rest, 4= pause from work (+ 4=start)
+        # отслеживание в каком статусе поток 1 = rest, 2 = work,
+        # 3 = pause from rest, 4 = pause from work (+ 4=start)
         self.__process_status = 4
         self.__seconds_till_next_phase = self.MINUT * self.list_with_min_values[0]
         self.__cycle = 0
 
-        mixer.init()  # инициализировать миксер для проигрывания
+        # инициализировать миксер для проигрывания локальных медиафайлов
+        mixer.init()
 
         # Оформить окошко
         self.main_window = tk.Tk()
@@ -102,13 +126,13 @@ class MyGUI:
     # дисплей с текущим статусом
     def __init_info(self):
         """initialize info widgets"""
-        # что сейчас за процесс ОТДЫХ/РАБОТА/ПАУЗА при отдыхе
+        # что сейчас за процесс ОТДЫХ/ФОКУС/ПАУЗА при отдыхе
         # мейн фон зеленый при работе синий при паузе серый
         # в эту же рамку сколько минут/секунд до следующего процесса
-        # (ОТДЫХ/РАБОТА)
+        # (ОТДЫХ/ФОКУС)
         # для статуса
         self.frame_info_status = tk.Frame(self.main_window)
-        self.frame_info_status.pack(padx=self.PADXY, pady=self.PADXY)
+        self.frame_info_status.pack(padx=self.PADXY, pady=self.PADXY_ss)
 
         self.__output_status = tk.StringVar()
         self.__output_status_label = tk.Label(
@@ -116,11 +140,15 @@ class MyGUI:
             textvariable=self.__output_status,
             font=self.FONT_STATUS,  # type: ignore
         )
-        self.__output_status_label.pack(side="top")
+        self.__output_status_label.pack(
+            side="top",
+            padx=self.PADX_STATUS_LABEL,
+            pady=self.PADY_STATUS_LABEL,
+        )
 
         # для минут
         self.frame_info_minutes = tk.Frame(self.main_window)
-        self.frame_info_minutes.pack(padx=self.PADXY, pady=self.PADXY)
+        self.frame_info_minutes.pack(padx=self.PADXY, pady=self.PADXY_ss)
 
         self.label_mins_1 = tk.Label(
             self.frame_info_minutes, text="Until the end of current phase is:"
@@ -139,7 +167,7 @@ class MyGUI:
     # виджеты для настроек таймера
     def __init_settings(self):
         """initializes settings widgets"""
-        # окна с текущей конфигурацией сколько минут отдых/работа
+        # окна с текущей конфигурацией сколько минут отдых/фокус
         # c возможностью задать время
         # какой цикл из скольки и сколько минут отдых после них
         self.frame_set_n_info = tk.Frame(self.main_window)
@@ -174,6 +202,8 @@ class MyGUI:
             self.__entry_settings[i].insert(0, self.list_with_min_values[i])
             self.__entry_settings[i].pack(padx=(self.PADXY))
 
+        self.bind_play_pause_to_frames()
+
     # Инит кнопок
     def __init_butt(self):
         """Buttons initialization."""
@@ -181,21 +211,60 @@ class MyGUI:
 
         self.__frame_butt = tk.Frame(self.main_window)
 
-        for k, v in self.buttons_dict.items():
+        # кнопки pause play не нужны
+        items = list(self.buttons_dict.items())
+        for k, v in items:
             butt = tk.Button(self.__frame_butt, text=k, command=v)
             butt.pack(side="left", padx=self.PADXY, pady=self.PADXY)
             self.__butts.append(butt)
-        self.__butts[3].config(relief=tk.SUNKEN)
 
         self.__frame_butt.pack()
+
+        if self.pause_between_phases_needed:
+            self.__butts[0].config(relief=tk.SUNKEN)
+        if self.sound_api_enabled:
+            self.__butts[1].config(relief=tk.SUNKEN)
+        if self.sound_enabled:
+            self.__butts[3].config(relief=tk.SUNKEN)
+
+    def bind_play_pause_to_frames(self):
+        """Create tag for children frames of __init_info"""
+        tag = "frames_for_info"
+        frames_to_tag = self.frame_info_minutes, self.frame_info_status
+
+        def add_tag_to_children(w):
+            tags = tuple(t for t in w.bindtags() if t != tag)
+            w.bindtags((tag,) + tags)
+            for child in w.winfo_children():
+                add_tag_to_children(child)
+
+        for frame in frames_to_tag:
+            add_tag_to_children(frame)
+            frame.bind_class(tag, "<Button-1>", self.choose_pause_or_play)
+
+    def choose_pause_or_play(self, event):
+        if getattr(self, "_handling_click", False):
+            return
+        self._handling_click = True
+        try:
+            if self.__process_status in (3, 4):
+                self.__start()
+            elif self.__process_status in (1, 2):
+                self.__pause()
+        finally:
+            self._handling_click = False
+
+    def send_play_to_sys_api(self):
+        pass
 
     def __start(self):
         """entry in execution flow, logic of flow"""
         try:
+            if self.sound_api_enabled:
+                send_to_system_api("play/pause media")
             mixer.music.unpause()
-        except Exception:
-            print("in __start mixer err")
-
+        except Exception as err:
+            print(f"in __start mixer or sys_api err:\n{err}")
         # self.__process_status отслеживание в каком статусе поток 1= rest,
         # 2= work, 3=pause from rest, 4= pause from work (+4=start)
         if self.__process_status == 3:
@@ -238,6 +307,12 @@ class MyGUI:
                 self.__seconds_till_next_phase = int(self.list_with_min_values[2] * self.MINUT)
                 self.schedule_tick()
 
+            if self.sound_api_enabled:
+                send_to_system_api("play/pause media")
+
+            if self.pause_between_phases_needed:
+                self.__pause()
+
     def schedule_tick(self):
         """tick creator"""
         self.update_status()
@@ -249,17 +324,20 @@ class MyGUI:
         self.__label_mins_output.set(f"{minutes}:{seconds:02d}")
 
         if self.__process_status == 3 or self.__process_status == 4:  # "PAUSE"
-            self.__output_status.set("PAUSE")
+            self.__output_status.set(self.STATUS_TITLE["pause"])
             self.frame_info_status["bg"] = self.COLOR_PAUSE
             self.frame_info_minutes["bg"] = self.COLOR_PAUSE
+            # self.__output_status_label["bg"] = self.COLOR_PAUSE
         elif self.__process_status == 2:  # WORK
-            self.__output_status.set("WORK")
+            self.__output_status.set(self.STATUS_TITLE["focus"])
             self.frame_info_status["bg"] = self.COLOR_WORK
             self.frame_info_minutes["bg"] = self.COLOR_WORK
+            # self.__output_status_label["bg"] = self.COLOR_WORK
         elif self.__process_status == 1:  # REST
-            self.__output_status.set("REST")
+            self.__output_status.set(self.STATUS_TITLE["rest"])
             self.frame_info_status["bg"] = self.COLOR_REST
             self.frame_info_minutes["bg"] = self.COLOR_REST
+            # self.__output_status_label["bg"] = self.COLOR_REST
 
     def __reset(self):
         """Resets flow and updates to specified by user
@@ -290,12 +368,14 @@ class MyGUI:
     def __pause(self):
         """pauses countdown"""
         try:
+            if self.sound_api_enabled:
+                send_to_system_api("play/pause media")
             self.main_window.after_cancel(self.id_to_cancel)
             mixer.music.unpause()
             if mixer.music.get_busy():  # не потокобезопасен отключить если что
                 mixer.music.pause()
         except Exception as err:
-            print("Error in __pause", err)
+            print("Error in __pause\n", err)
         if self.__process_status == 1:
             self.__process_status = 3
         elif self.__process_status == 2:
@@ -323,6 +403,24 @@ class MyGUI:
         else:
             self.sound_enabled = True
             self.__butts[3].config(relief=tk.SUNKEN)
+
+    def sound_api_enabler(self):
+        """enables/disables system multimedia signals"""
+        if self.sound_api_enabled:
+            self.sound_api_enabled = False
+            self.__butts[1].config(relief=tk.RAISED)
+        else:
+            self.sound_api_enabled = True
+            self.__butts[1].config(relief=tk.SUNKEN)
+
+    def pause_between_phases_toggle(self):
+        """enables/disables pause between phases"""
+        if self.pause_between_phases_needed:
+            self.pause_between_phases_needed = False
+            self.__butts[0].config(relief=tk.RAISED)
+        else:
+            self.pause_between_phases_needed = True
+            self.__butts[0].config(relief=tk.SUNKEN)
 
     # Другая функция для воспроизведения,
     # без диалогового окна но с зависимостью от pygame
@@ -395,6 +493,10 @@ class MyGUI:
             print("Path read successfully.", self.path_to_rest, self.path_to_work)
         finally:
             self.file.close()
+
+
+class SettingsMyGUI:
+    pass
 
 
 if __name__ == "__main__":
